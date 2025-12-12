@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="el" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Free Images — CC0 / Public Domain</title>
+  <meta name="description" content="Ανέβασμα, αναζήτηση και προβολή εικόνων CC0/Public Domain με Firebase (Firestore + Storage)." />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10Z" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M8.5 13.2 11 15.7l4.8-5.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand__title">Free Images</div>
+          <div class="brand__sub">CC0 / Public Domain • Firebase Storage</div>
+        </div>
+      </div>
+
+      <div class="topbar__right">
+        <div class="status" id="authStatus" title="Σύνδεση Firebase Auth">
+          <span class="dot" aria-hidden="true"></span>
+          <span>Σύνδεση…</span>
+        </div>
+        <button class="btn btn--ghost" id="themeBtn" type="button" title="Theme">◐</button>
+        <button class="btn" id="openUploadBtn" type="button">Upload</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <section class="panel panel--search">
+      <div class="panel__hero">
+        <div class="panel__heroText">
+          <h1>Ανέβασε & βρες εικόνες χωρίς copyright</h1>
+          <p class="muted">
+            Επιτρέπονται μόνο <b>CC0</b> ή <b>Public Domain</b>. Με το upload δηλώνεις ότι έχεις τα δικαιώματα και τις παραχωρείς ελεύθερα.
+          </p>
+          <div class="heroChips" id="quickTags" aria-label="Quick tags"></div>
+        </div>
+        <div class="panel__heroCard">
+          <div class="miniStat">
+            <div class="miniStat__k">Tip</div>
+            <div class="miniStat__v">Πρόσθεσε tags (π.χ. <span class="kbd">sunset</span> <span class="kbd">athens</span>) για καλύτερο search.</div>
+          </div>
+          <div class="miniStat">
+            <div class="miniStat__k">Upload</div>
+            <div class="miniStat__v">Drag & drop, progress, auto metadata.</div>
+          </div>
+          <div class="miniStat">
+            <div class="miniStat__k">Προσοχή</div>
+            <div class="miniStat__v">Για public site βάλε moderation + takedown.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel__controls">
+        <div class="searchbar">
+          <div class="field">
+            <span class="field__icon" aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" placeholder="Αναζήτηση με τίτλο ή tags…" autocomplete="off" />
+          </div>
+
+          <select id="licenseFilter" title="Φίλτρο άδειας">
+            <option value="ALL">Όλες οι άδειες</option>
+            <option value="CC0-1.0">CC0</option>
+            <option value="PUBLIC-DOMAIN">Public Domain</option>
+          </select>
+
+          <select id="sortSelect" title="Ταξινόμηση">
+            <option value="NEW">Νεότερα</option>
+            <option value="OLD">Παλαιότερα</option>
+          </select>
+
+          <button class="btn" id="searchBtn" type="button">Search</button>
+        </div>
+
+        <div class="row row--space">
+          <div class="muted small" id="resultInfo">—</div>
+          <div class="row">
+            <button class="btn btn--ghost" id="refreshBtn" type="button">Reset</button>
+            <button class="btn btn--ghost" id="loadMoreBtn" type="button" disabled>Load more</button>
+          </div>
+        </div>
+
+        <div class="notice small" id="indexHint" hidden></div>
+      </div>
+
+      <div class="masonry" id="grid" aria-live="polite"></div>
+      <div class="empty muted" id="emptyState" hidden>Δεν βρέθηκαν εικόνες.</div>
+    </section>
+
+    <aside class="panel panel--about">
+      <div class="panel__header">
+        <h2>Setup</h2>
+        <p class="muted">
+          Θέλει Firebase: <b>Firestore</b> + <b>Storage</b> + <b>Auth (Anonymous)</b>. Δες <span class="kbd">README.md</span>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>Σύντομο checklist</h3>
+        <ul class="muted checklist">
+          <li>Βάλε το config στο <span class="kbd">firebase-config.js</span></li>
+          <li>Enable Anonymous Auth</li>
+          <li>Rules για Storage/Firestore (στο README)</li>
+          <li>Running με τοπικό server (όχι double-click)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Για να γίνει “site”</h3>
+        <p class="muted">
+          Προτείνεται: App Check, limits (μέγεθος/τύπος), report/takedown, admin moderation.
+        </p>
+      </div>
+
+      <div class="card footerCard">
+        <div class="muted small">Made for your project: <b>copyfy</b></div>
+        <div class="muted small">© (UI) — Images remain CC0/PD by uploader declaration.</div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Upload Modal -->
+  <dialog class="modal" id="uploadModal">
+    <form class="modal__card" id="uploadForm" method="dialog">
+      <div class="modal__top">
+        <div>
+          <div class="modal__title">Upload εικόνων</div>
+          <div class="muted small">Firebase Storage + Firestore metadata.</div>
+        </div>
+        <button class="btn btn--ghost" value="cancel" type="submit" aria-label="Κλείσιμο">✕</button>
+      </div>
+
+      <div class="grid2">
+        <label>
+          Τίτλος (προαιρετικό)
+          <input name="title" id="titleInput" maxlength="80" placeholder="π.χ. Sunset in Athens" />
+        </label>
+
+        <label>
+          Tags (κόμμα ή κενό)
+          <input name="tags" id="tagsInput" maxlength="160" placeholder="sunset, athens, sea" />
+        </label>
+      </div>
+
+      <div class="grid2">
+        <label>
+          Πηγή (προαιρετικό link)
+          <input name="sourceUrl" id="sourceUrlInput" maxlength="300" placeholder="https://..." />
+        </label>
+
+        <label>
+          Άδεια
+          <select name="license" id="licenseSelect" required>
+            <option value="CC0-1.0">CC0 1.0 (No Rights Reserved)</option>
+            <option value="PUBLIC-DOMAIN">Public Domain</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" id="confirmCk" required />
+        Δηλώνω ότι έχω τα δικαιώματα και παραχωρώ την εικόνα ελεύθερα (CC0/PD).
+      </label>
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Επίλεξε ή σύρε εικόνες">
+        <input id="fileInput" type="file" accept="image/*" multiple />
+        <div>
+          <div class="dropzone__title">Σύρε εικόνες εδώ ή πάτα για επιλογή</div>
+          <div class="muted small">jpg / png / webp / gif • προτείνεται ≤ 10MB ανά αρχείο</div>
+        </div>
+      </div>
+
+      <div class="uploads" id="uploadList"></div>
+
+      <div class="modal__actions">
+        <button class="btn btn--ghost" id="clearQueueBtn" type="button">Clear</button>
+        <div class="row">
+          <button class="btn btn--ghost" value="cancel" type="submit">Ακύρωση</button>
+          <button class="btn" id="startUploadBtn" type="button">Upload</button>
+        </div>
+      </div>
+
+      <div class="muted small" id="uploadStatus"></div>
+    </form>
+  </dialog>
+
+  <!-- Viewer Modal -->
+  <dialog class="modal" id="viewerModal">
+    <div class="viewer">
+      <button class="btn btn--ghost viewer__close" id="closeViewerBtn" type="button" aria-label="Κλείσιμο">✕</button>
+
+      <div class="viewer__media">
+        <img id="viewerImg" alt="" />
+      </div>
+
+      <div class="viewer__meta">
+        <div class="viewer__title" id="viewerTitle">—</div>
+        <div class="row wraprow">
+          <span class="pill" id="viewerLicense">—</span>
+          <span class="muted small" id="viewerWhen">—</span>
+        </div>
+        <div class="tags" id="viewerTags"></div>
+
+        <div class="row wraprow">
+          <a class="btn btn--ghost" id="viewerOpen" target="_blank" rel="noreferrer">Open</a>
+          <button class="btn btn--ghost" id="copyLinkBtn" type="button">Copy link</button>
+          <button class="btn btn--ghost" id="shareBtn" type="button">Share</button>
+          <a class="btn" id="downloadBtn" download>Download</a>
+        </div>
+
+        <div class="row row--space">
+          <a class="muted small" id="viewerSource" target="_blank" rel="noreferrer" hidden>Source</a>
+          <button class="btn btn--danger" id="deleteBtn" type="button" hidden>Delete</button>
+        </div>
+
+        <div class="muted small" id="viewerNote">
+          Αν κάτι δεν είναι πραγματικά CC0/PD, ανέβασε μόνο αφού έχεις δικαίωμα. Πρόσθεσε σελίδα “Takedown” πριν το κάνεις public.
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
